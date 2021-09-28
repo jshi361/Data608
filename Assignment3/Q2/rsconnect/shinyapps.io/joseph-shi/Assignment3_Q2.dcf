@@ -1,0 +1,14 @@
+name: Assignment3_Q2
+title: Assignment3_Q2
+username:
+account: joseph-shi
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4737704
+bundleId: 5079078
+url: https://joseph-shi.shinyapps.io/Assignment3_Q2/
+when: 1632799327.29181
+lastSyncTime: 1632799327.29181
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: server.R|ui.R
