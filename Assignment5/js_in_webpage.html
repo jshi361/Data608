@@ -398,7 +398,7 @@
 
                 // D3 CSV Parsing
                 var search = {};
-                d3.csv("https://raw.githubusercontent.com/jshi361/Data608/main/Assignment5/data/president.csv").then(function(data) {
+                d3.csv("https://raw.githubusercontent.com/jshi361/Data608/main/Assignment5/data/presidents.csv").then(function(data) {
                     var presidents_table_html = presidents_table_html_start;
                     data.forEach(function(row) {
                         var bmi = Math.round(row['Weight']/Math.pow(row['Height'], 2) * 703 ,1);
