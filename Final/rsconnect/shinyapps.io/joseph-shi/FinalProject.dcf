@@ -1,0 +1,14 @@
+name: FinalProject
+title: FinalProject
+username:
+account: joseph-shi
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5312401
+bundleId: 5361464
+url: https://joseph-shi.shinyapps.io/FinalProject/
+when: 1639283543.90874
+lastSyncTime: 1639283543.90874
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: cdc-moderna-covid-19-vaccine-distribution-by-state.csv|cdc-moderna-covid-19-vaccine-distribution-by-state.xlsx|cdc-pfizer-covid-19-vaccine-distribution-by-state.csv|FinalProjProp_ZhouxinShi.html|FinalProjProp_ZhouxinShi.Rmd|nst-est2020.csv|state-abbrevs1.csv|state_3.csv|us-counties.csv|us-states.csv

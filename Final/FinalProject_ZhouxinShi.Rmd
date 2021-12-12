@@ -1,0 +1,413 @@
+---
+title: "Final Project"
+author: "Zhouxin  Shi"
+date: "12/12/2021"
+output: 
+  openintro::lab_report: default
+  html_document:
+    number_sections: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(warn=0)
+```
+
+```{r message=FALSE}
+library(tidyverse)
+library(plyr)
+library(kableExtra)
+library(plotly)
+library(corrplot)
+library(PerformanceAnalytics)
+library(stats)
+```
+
+## Problem Statement and background
+
+<style>
+div.aquamarine { background-color:#7fffd4; border-radius: 10px; padding: 5px;}
+</style>
+<div class = "aquamarine">
+
+For my final project, I will study the number of cases and deaths of covid-19 in various states in the United States, and visualize the CDC Moderna covid-19-vaccine-distribution-by-state, CDC Pfizer covid-19-vaccine-distribution-by-state and other data. Next, I will study the relationship between vaccination in the United States and the number of covid-19 cases and deaths, In order to find out whether vaccination can significantly reduce the number of covid-19 cases and deaths, And whether there are differences among different vaccine manufacturers
+
+ First I would like to intuitively show the number of covid-19 cases and deaths in U.S States. Then, I would show the vaccination situation in U.S States. Most of the data can be accurate to the daily data of U.S States. I would also show a diagram of the relationship between covid-19 cases, deaths and vaccination.
+
+I will decide what data to use and not to use when starting the project. As the project continues, more data may be added, such as the population of each state in the United States, so as to facilitate the study of the proportion of cases, mortality and vaccination rate of covid-19 in the United States, since this is what I interested in study during this period of time.
+
+
+</div> \hfill\break
+
+
+## The data will come from various sources:
+
+- Amazon Web Services (AWS) data lake for analysis of COVID-19 data(https://datascience.nih.gov/covid-19-open-access-resources),Root folder(https://dj2taa9i652rf.cloudfront.net/)
+1. https://covid19-lake.s3.us-east-2.amazonaws.com/cdc-moderna-vaccine-distribution/csv/cdc-moderna-covid-19-vaccine-distribution-by-state.csv
+ 
+2. https://covid19-lake.s3.us-east-2.amazonaws.com/cdc-pfizer-vaccine-distribution/csv/cdc-pfizer-covid-19-vaccine-distribution-by-state.csv
+ 
+3. https://covid19-lake.s3.us-east-2.amazonaws.com/rearc-covid-19-nyt-data-in-usa/csv/us-states/us-states.csv
+
+
+Firstly, we analyze the change trend of the number of confirmed cases. It can be seen that the number of confirmed cases in the United States shows an exponential upward trend，From February to July 2021, the Pandemic was relatively mild, and after July 2021, it showed a rapid upward trend.
+
+
+
+
+## Work process 
+
+
+
+```{r}
+us_states<-read.csv("us-states.csv",header = TRUE)
+
+View(us_states)
+
+library(ggplot2)
+library(dplyr)
+cases1<-us_states%>%
+  group_by(date) %>% 
+  summarise(casessum = sum(cases, 
+                        na.rm=T) 
+            
+            )
+cases1$date<-as.Date(cases1$date)
+options(scipen = 100)
+ggplot(data = cases1,aes(x=date,y=casessum))+
+         geom_point(color="blue",size=1)+
+  labs(title = "date vs  cases",x="date",y="cases")
+
+
+
+
+```
+
+*In terms of the number of deaths in the United States, the growth curve of the number of deaths is similar to the trend of the number of confirmed cases, indicating that the more confirmed cases, the more deaths.*
+
+```{r}
+
+options(scipen = 100)
+deaths1<-us_states%>%
+  group_by(date) %>% 
+  summarise(deathssum = sum(deaths, 
+                        na.rm=T) )
+
+deaths1$date<-as.Date(deaths1$date)
+
+ggplot(data = deaths1,aes(x=date,y=deathssum))+
+         geom_point(color="red",size=1)+
+  labs(title = "date vs  deaths",x="date",y="deaths")
+
+```
+
+## Mortality over time
+
+In terms of mortality in the United States, it once reached 8% in February 2020, but with the improvement of treatment methods in the United States, the overall mortality showed a downward trend.
+
+```{r}
+
+casedeath<-us_states%>%
+  group_by(date) %>% 
+  summarise(
+    casesum=sum(cases, 
+                        na.rm=T) ,
+    deathsum = sum(deaths, 
+                        na.rm=T) )
+
+
+
+
+casedeath$date<-as.Date(casedeath$date)
+
+casedeath$mortality<-casedeath$deathsum/casedeath$casesum
+
+
+
+ggplot(data =casedeath,aes(x=date,y=mortality) )+
+  geom_line(size=1)+labs(title = "Mortality over time ",x="date",y="mortality")
+  
+
+```
+
+
+
+
+*From the combination of confirmed cases and deaths in the United States, the death toll is still at a relatively low level relative to the confirmed number.*
+```{r}
+
+options(scipen = 100)
+
+ggplot(data=casedeath)+geom_line(aes(x=date,y=casesum),color="green")+
+  geom_point(aes(x=date,y=casesum),color="green",size=0.8)+
+  geom_line(aes(x=date,y=deathsum),color="blue")+
+  geom_point(aes(x=date,y=deathsum),color="blue",size=0.8)+
+  labs(title = "date  vs  cases vs  deaths",x="Date")
+
+
+```
+
+
+
+
+*From the number of confirmed cases in the states of the United States, California, Texas and Florida are the states with the largest number of confirmed cases, of which California and Texas are more than 4 million*
+
+
+```{r}
+
+maxdate<-max(us_states$date)
+
+state1<-us_states%>%
+  group_by(state) %>% 
+  filter(date==maxdate)%>%
+  summarise(
+            casesum=sum(cases, 
+                        na.rm=T) ,
+    deathsum = sum(deaths, 
+                        na.rm=T)
+    
+            )
+state1$mortality<-state1$deathsum/state1$casesum
+
+
+ggplot(data=state1,aes(x=reorder(state,casesum),y=casesum))+
+  geom_bar(stat = 'identity',fill='red') + coord_flip()
+
+
+
+```
+
+
+*California and Texas have caused the most deaths, with more than 60000 people*
+
+```{r}
+ggplot(data=state1,aes(x=reorder(state,deathsum),y=deathsum))+
+   geom_bar(stat = 'identity',fill='blue')+ coord_flip()
+
+
+
+```
+*New York is an area where the Pandemic occurred earlier, and the mortality caused by the Pandemic is relatively high*
+
+
+```{r}
+ggplot(data=state1,aes(x=reorder(state,mortality),y=mortality))+
+   geom_bar(stat = 'identity',fill='green')+ coord_flip()
+state1
+
+
+library(plotly)
+
+
+
+data1<-read.csv("state-abbrevs1.csv",header = TRUE)
+
+state2<-inner_join(state1,data1,by='state')
+
+
+w <- list(color = toRGB("white"), width = 2)
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showlakes = TRUE,
+  lakecolor = toRGB('white')
+)
+p <- plot_geo(state2, locationmode = 'USA-states') %>%
+  add_trace(
+    z = ~mortality, locations = ~code,
+    color = ~mortality, colors = 'Purples'
+  ) %>%
+  colorbar(title = "mortality") %>%
+  layout(
+    title = 'mortality',
+    geo = g
+  )
+p
+
+
+
+```
+
+## vaccine-distribution-by-state
+<style>
+div.aquamarine { background-color:#7fffd4; border-radius: 10px; padding: 5px;}
+</style>
+<div class = "aquamarine">
+
+According to the CDC Moderna covid-19-vaccine-distribution-by-state data, Moderna vaccine is more popular and has been at a high level since May.
+</div> \hfill\break
+
+```{r}
+
+
+moderna<-read.csv("cdc-moderna-covid-19-vaccine-distribution-by-state.csv",header = TRUE)
+pfizer<-read.csv("cdc-pfizer-covid-19-vaccine-distribution-by-state.csv",header = TRUE)
+
+
+
+
+moderna1<-moderna%>%
+  group_by(week_of_allocations) %>% 
+  summarise(
+            X_2nd_dose_allocations_sum=sum(X_2nd_dose_allocations, 
+                        na.rm=T) ,
+  
+                )
+
+moderna1$week_of_allocations<-as.Date(moderna1$week_of_allocations)
+
+ggplot(data = moderna1,aes(x=week_of_allocations,y=X_2nd_dose_allocations_sum))+
+  geom_line(size=1,color="blue")+
+  labs(title = "cdc-moderna-covid-19-vaccine-distribution-by-state")
+
+
+
+
+
+```
+
+
+
+*From the CDC Pfizer covid-19-vaccine-distribution-by-state, Pfizer's vaccine was in a relatively stable state after the vaccination peak in April.*
+
+```{r}
+
+
+pfizer1<-pfizer%>%
+  group_by(week_of_allocations) %>% 
+  summarise(
+            X_2nd_dose_allocations_sum=sum(X_2nd_dose_allocations, 
+                        na.rm=T) ,
+  
+                )
+
+pfizer1$week_of_allocations<-as.Date(pfizer1$week_of_allocations)
+
+ggplot(data = pfizer1,aes(x=week_of_allocations,y=X_2nd_dose_allocations_sum))+
+  geom_line(size=1,color="red")+
+  labs(title = "cdc-pfizer-covid-19-vaccine-distribution-by-state")
+
+
+```
+
+
+```{r}
+
+moderna2<-moderna%>%
+  group_by(jurisdiction) %>% 
+  summarise(
+            X_2nd_dose_allocations_sum=sum(X_2nd_dose_allocations, 
+                        na.rm=T) ,
+  
+                )
+moderna2<-moderna2%>%
+   rename(moderna_2nd_dose_allocations_sum = X_2nd_dose_allocations_sum)
+moderna2
+
+ggplot(data=moderna2,aes(x=reorder(jurisdiction,moderna_2nd_dose_allocations_sum),y=moderna_2nd_dose_allocations_sum))+
+   geom_bar(stat = 'identity',fill='blue')+ coord_flip()
+
+
+```
+
+
+
+
+```{r}
+pfizer2<-pfizer%>%
+  group_by(jurisdiction) %>% 
+  summarise(
+            X_2nd_dose_allocations_sum=sum(X_2nd_dose_allocations, 
+                        na.rm=T) ,
+  
+                )
+
+pfizer2<-pfizer2%>%
+   rename(pfizer_2nd_dose_allocations_sum = X_2nd_dose_allocations_sum)
+pfizer2
+
+ggplot(data=pfizer2,aes(x=reorder(jurisdiction,pfizer_2nd_dose_allocations_sum),y=pfizer_2nd_dose_allocations_sum))+
+   geom_bar(stat = 'identity',fill='red')+ coord_flip()
+
+```
+
+## Export Data to csv for shiny app
+
+```{r}
+
+vaccines<-inner_join(moderna2,pfizer2,by=c("jurisdiction"))
+vaccines
+
+
+vaccines<-vaccines%>%
+   rename(state = jurisdiction)
+vaccines
+
+
+state_2<-inner_join(state1,vaccines,by=c("state"))
+
+data2<-data1%>%
+  rename(ID = code)
+data_3<-inner_join(state_2,data2,by=c("state"))
+data_3
+
+nst_est2020<-read.csv("nst-est2020.csv",header = TRUE)
+
+nst_est2020_1<-subset(nst_est2020,select = c(NAME,POPESTIMATE2020))
+
+nst_est2020_1<-nst_est2020_1%>%
+  rename(state = NAME)
+
+state_3<-inner_join(data_3,nst_est2020_1,by=c("state"))
+state_3
+
+
+state_3<-state_3%>%
+  mutate(pfizer_2nd_dose_allocations_rate=pfizer_2nd_dose_allocations_sum/POPESTIMATE2020,
+         moderna_2nd_dose_allocations_rate=moderna_2nd_dose_allocations_sum/POPESTIMATE2020)
+state_3
+#export csv
+write.csv(state_3,"data.csv")
+
+
+```
+
+
+## vaccine and mortality
+<style>
+div.aquamarine { background-color:#7fffd4; border-radius: 10px; padding: 5px;}
+</style>
+<div class = "aquamarine">
+
+</div> \hfill\break
+
+```{r}
+
+ggplot(data = state_3,aes(x=pfizer_2nd_dose_allocations_rate,y=mortality))+
+  geom_point(color="blue")
+
+```
+
+## Link to shiny Apps
+https://joseph-shi.shinyapps.io/FinalProject/
+
+```{r}
+
+ggplot(data = state_3,aes(x=moderna_2nd_dose_allocations_rate,y=mortality))+
+  geom_point(color="red")
+
+```
+
+
+## Conclusion
+*From the above analysis, the Pandemic in the United States shows an exponential upward trend. After vaccination, there is a certain gentle trend. With the vaccination.*
+*There has been a significant decline in mortality, and vaccines can effectively reduce mortality.*
+*California is the worst Pandemic area in the United States, with the largest number of confirmed cases and deaths.*
+*Pfizer vaccine is more popular with American residents than Moderna vaccine, and the number of vaccinations is higher.*
+*Vaccination can effectively reduce mortality*
+
+
+
+
+
+
